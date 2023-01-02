@@ -15,9 +15,13 @@ const Tour = require("../models/tourModel");
 
 const getAllTours = async (req, res) => {
   try {
-    console.log(req.query);
+    // eslint-disable-next-line node/no-unsupported-features/es-syntax
+    const { page, sort, limit, fields, ...queryObj } = req.query;
 
-    const tours = await Tour.find();
+    const query = Tour.find(queryObj);
+
+    const tours = await query;
+
     res.status(200).json({
       status: "success",
       results: tours.length,
