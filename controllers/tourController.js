@@ -1,4 +1,5 @@
 const Tour = require("../models/tourModel");
+const APIFeatures = require("../utils/apiFeatures");
 
 // const checkId = (req, res, next, _val) => {
 //   console.log("check id is working 🍓");
@@ -13,14 +14,21 @@ const Tour = require("../models/tourModel");
 //   next();
 // };
 
+const aliasTopTours = async (req, res, next) => {
+  req.query.limit = "5";
+  req.query.sort = "-ratingsAverage,price";
+  req.query.fields = "name,price,ratingsAverage,summary,difficulty";
+  next();
+};
+
 const getAllTours = async (req, res) => {
   try {
-    // eslint-disable-next-line node/no-unsupported-features/es-syntax
-    const { page, sort, limit, fields, ...queryObj } = req.query;
-
-    const query = Tour.find(queryObj);
-
-    const tours = await query;
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .fields()
+      .paginate();
+    const tours = await features.query;
 
     res.status(200).json({
       status: "success",
@@ -33,6 +41,7 @@ const getAllTours = async (req, res) => {
     res.status(400).json({
       status: "fail",
       message: "Bad request",
+      message2: error.message,
     });
   }
 };
@@ -67,7 +76,7 @@ const createTour = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "fail",
-      message: "Invalid data sent!",
+      message: error.message,
     });
   }
 };
@@ -113,4 +122,5 @@ module.exports = {
   createTour,
   updateTour,
   deleteTour,
+  aliasTopTours,
 };
