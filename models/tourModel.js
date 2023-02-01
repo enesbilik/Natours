@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const slugify = require("slugify");
+// eslint-disable-next-line import/no-extraneous-dependencies
+// const validator = require("validator");
 
 const tourSchema = new mongoose.Schema(
   {
@@ -8,6 +10,9 @@ const tourSchema = new mongoose.Schema(
       required: [true, "A tour must have a price"],
       unique: true,
       trim: true,
+      maxlength: [40, "A tour name must have less or equal then 40 characters"],
+      minlength: [10, "A tour name must have more or equal then 10 characters"],
+      // validate: [validator.isAlpha, "Tour name must only contain characters"],
     },
     slug: String,
     durations: {
@@ -21,11 +26,28 @@ const tourSchema = new mongoose.Schema(
     difficulty: {
       type: String,
       require: [true, "A tour must have a difficulty"],
+      enum: {
+        values: ["easy", "medium", "difficult"],
+        message: "Difficulty is either easy, medium or difficult",
+      },
     },
-    ratingsAverage: { type: Number, default: 4.5 },
+    ratingsAverage: {
+      type: Number,
+      default: 4.5,
+      min: [1, "Rating must be above 1.0"],
+      max: [5, "Rating must be below 5.0"],
+    },
     ratingsQuantity: { type: Number, default: 0 },
     price: { type: Number, required: [true, "A tour must have a price"] },
-    priceDiscount: Number,
+    priceDiscount: {
+      type: Number,
+      validate: {
+        message: "Discount price ({VALUE}) should be below regular price",
+        validator: function (val) {
+          return val < this.price;
+        },
+      },
+    },
     summary: {
       type: String,
       trim: true,
@@ -74,6 +96,13 @@ tourSchema.pre("save", function (next) {
 
 tourSchema.pre(/^find/, function (next) {
   this.find({ secretTour: { $ne: true } });
+
+  next();
+});
+
+tourSchema.pre("aggregate", function (next) {
+  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+
   next();
 });
 
